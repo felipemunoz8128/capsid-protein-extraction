@@ -80,7 +80,7 @@ def get_batch(batch_url, session=None):
         batch_url = get_next_link(response.headers)
 
 
-def download_uniprot_jsons(query='taxonomy_id:327046 AND gene:gag', batch_size=500, outdir='jsons', verbose=False):
+def download_uniprot_jsons(query='taxonomy_id:327045 AND gene:gag', batch_size=500, outdir='jsons', verbose=False):
     """
     Download UniProt entries matching a query as individual JSON files.
     
