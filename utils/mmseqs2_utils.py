@@ -2,6 +2,7 @@
 Utilities for running MMseqs2 clustering and parsing results.
 """
 import os
+import shutil
 import subprocess
 import pandas as pd
 
@@ -107,6 +108,15 @@ def run_mmseqs_clustering(
         
         # Parse cluster assignments and calculate statistics
         n_clusters, cluster_sizes, stats = parse_cluster_tsv(output_files['cluster_tsv'])
+        
+        # Explicitly remove temporary directory if requested
+        # (MMseqs2 --remove-tmp-files may not remove the directory itself)
+        if remove_tmp_files and os.path.exists(tmp_dir):
+            try:
+                shutil.rmtree(tmp_dir)
+            except Exception as e:
+                # Don't fail if cleanup fails, just warn
+                print(f"Warning: Could not remove temporary directory {tmp_dir}: {e}")
         
         return {
             'output_files': output_files,
