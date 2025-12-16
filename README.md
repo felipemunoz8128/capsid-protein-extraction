@@ -70,6 +70,9 @@ All output files are saved in the `outputs/` directory:
 - `unique_capsid_sequences.tsv` - Tab-separated values file for easy viewing/analysis
 - `unique_capsid_sequences.fasta` - FASTA format sequences
 - `mmseqs2_outputs/` - MMseqs2 clustering results (cluster TSV, representative sequences, etc.)
+- `orthoretrovirinae_gag_swissprot/` - Individual UniProt JSON entries downloaded from the API
+
+**Note:** Example output files from a complete run are included in this repository in the `outputs/` directory. You can examine these files to see the expected output format before running the script yourself.
 
 ## Project Structure
 

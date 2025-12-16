@@ -10,10 +10,11 @@ ENV/
 .venv
 
 # Output files and data
-outputs/
-*.json
-*.tsv
-*.fasta
+# Allow outputs/ directory but exclude temporary MMseqs2 files
+outputs/mmseqs2_tmp/
+outputs/**/*.dbtype
+outputs/**/*.index
+outputs/**/*.source
 
 # MMseqs2 temporary files
 *.dbtype
