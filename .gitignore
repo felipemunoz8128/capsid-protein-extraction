@@ -9,6 +9,9 @@ venv/
 ENV/
 .venv
 
+# Conda
+.conda/
+
 # Output files and data
 # Allow outputs/ directory but exclude temporary MMseqs2 files
 outputs/mmseqs2_tmp/

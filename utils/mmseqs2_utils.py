@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import pandas as pd
+from utils.fasta_utils import _extract_label_from_uniprotkb_id
 
 
 def run_mmseqs_clustering(
@@ -271,8 +272,8 @@ def add_cluster_assignments(metadata_list, cluster_tsv):
     
     Args:
         metadata_list: List of metadata dictionaries to update. Each dictionary should
-                     have a 'primaryAccession' field that matches the sequence IDs
-                     used in the FASTA file that was clustered. Modified in place.
+                     have a 'label' field (added during metadata aggregation) that matches
+                     the FASTA headers used for clustering. Modified in place.
         cluster_tsv: Path to MMseqs2 cluster TSV file. Should be the same file used
                     to cluster the sequences (typically ends with '_cluster.tsv').
     
@@ -283,12 +284,16 @@ def add_cluster_assignments(metadata_list, cluster_tsv):
     
     Note:
         The function performs multiple lookup strategies to match sequences:
-        1. Exact match with comma-separated accessions (as they appear in FASTA headers)
-        2. Fallback to sorted comma-separated accessions
-        3. Fallback to individual primary accession
+        1. Uses the 'label' field from metadata entries (preferred, already unique)
+        2. Falls back to extracting label from uniProtkbId if label field not present
+        3. Falls back to primaryAccession if label extraction fails
+        4. Tries sorted comma-separated format if lookup_key contains commas
+        5. Tries individual labels/accessions as last resort
         If no match is found, cluster_id is set to None.
         
         Cluster IDs are assigned based on representative sequence order, not cluster size.
+        The function assumes the FASTA file was written with labels (use_label=True),
+        and that the 'label' field in metadata entries matches the FASTA headers.
     """
     # Load cluster assignments
     cluster_df = get_cluster_dataframe(cluster_tsv)
@@ -311,32 +316,50 @@ def add_cluster_assignments(metadata_list, cluster_tsv):
         sequence_to_cluster_id[member_id] = cluster_id
     
     # Add cluster_id to each metadata entry by matching sequence identifiers
+    # FASTA file uses the "label" field from metadata entries, which is already unique
     for entry in metadata_list:
-        acc = entry.get('primaryAccession', '')
+        # Use label field if available (already handles duplicates)
+        lookup_key = entry.get('label', '')
         
-        # Strategy 1: Try exact match as it appears in FASTA header
-        # FASTA headers preserve the order from the list (not sorted)
-        if isinstance(acc, list):
-            lookup_key = ','.join(str(a) for a in acc if a)
-        else:
-            lookup_key = str(acc)
+        # Fallback: extract label from uniProtkbId if label field not present
+        if not lookup_key:
+            uniProtkb_id = entry.get('uniProtkbId', '')
+            lookup_key = _extract_label_from_uniprotkb_id(uniProtkb_id)
         
+        # Final fallback to primaryAccession if label extraction failed
+        if not lookup_key:
+            acc = entry.get('primaryAccession', '')
+            if isinstance(acc, list):
+                lookup_key = ','.join(str(a) for a in acc if a)
+            else:
+                lookup_key = str(acc) if acc else ""
+        
+        # Try exact match
         cluster_id = sequence_to_cluster_id.get(lookup_key)
         
         if cluster_id is not None:
             entry['cluster_id'] = cluster_id
         else:
-            # Strategy 2: If not found, try sorted version (handles order differences)
-            if isinstance(acc, list):
-                sorted_key = ','.join(sorted(str(a) for a in acc if a))
+            # Strategy 2: If not found and lookup_key contains commas, try sorted version
+            if ',' in lookup_key:
+                sorted_key = ','.join(sorted(lookup_key.split(',')))
                 cluster_id = sequence_to_cluster_id.get(sorted_key)
                 if cluster_id is not None:
                     entry['cluster_id'] = cluster_id
                 else:
-                    # Strategy 3: Try individual primary accession (last resort)
-                    if len(acc) > 0:
-                        cluster_id = sequence_to_cluster_id.get(str(acc[0]))
-                        entry['cluster_id'] = cluster_id if cluster_id is not None else None
+                    # Strategy 3: Try individual labels/accessions (last resort)
+                    parts = lookup_key.split(',')
+                    if len(parts) > 0:
+                        # Try each part individually
+                        found = False
+                        for part in parts:
+                            cluster_id = sequence_to_cluster_id.get(part.strip())
+                            if cluster_id is not None:
+                                entry['cluster_id'] = cluster_id
+                                found = True
+                                break
+                        if not found:
+                            entry['cluster_id'] = None
                     else:
                         entry['cluster_id'] = None
             else:

@@ -6,6 +6,8 @@ Workflow:
 2. Extract capsid features (complete, non-nucleocapsid)
 3. Extract sequences and metadata
 4. Find unique sequences and aggregate metadata
+5. Cluster sequences using MMseqs2
+6. Prepare sequences for phylogenetic analysis (MAFFT alignment + ClipKIT trimming)
 """
 
 import os
@@ -19,6 +21,7 @@ from utils import uniprot_utils
 from utils import metadata_utils
 from utils import fasta_utils
 from utils import mmseqs2_utils
+from utils import phylogeny_utils
 
 
 def main():
@@ -30,15 +33,18 @@ def main():
     2. Extracts capsid features (complete, non-nucleocapsid) from each entry
     3. Aggregates metadata by unique sequences
     4. Clusters sequences using MMseqs2
-    5. Saves results in multiple formats (JSON, TSV, FASTA)
+    5. Prepares sequences for phylogenetic analysis (MAFFT alignment + ClipKIT trimming)
+    6. Saves results in multiple formats (JSON, TSV, FASTA)
     
     All output files are saved in the 'outputs' directory.
     """
     # Set up output directories
     output_dir = 'outputs'
     mmseqs2_output_dir = os.path.join(output_dir, 'mmseqs2_outputs')
+    phylogeny_output_dir = os.path.join(output_dir, 'phylogeny')
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(mmseqs2_output_dir, exist_ok=True)
+    os.makedirs(phylogeny_output_dir, exist_ok=True)
     
     # Download UniProt entries and extract capsid features
     print("=" * 80)
@@ -106,7 +112,8 @@ def main():
         unique_sequences,
         unique_fasta,
         seq_key="sequence",
-        id_key="primaryAccession"
+        id_key="primaryAccession",
+        use_label=True  # Use organism label (e.g., "FIVWO") instead of primaryAccession
     )
     print(f"Saved: {unique_sequences_file}, {unique_fasta}")
     
@@ -138,6 +145,25 @@ def main():
     mmseqs2_utils.add_cluster_assignments(unique_sequences, clustering_results['output_files']['cluster_tsv'])
     metadata_utils.save_metadata_json(unique_sequences, unique_sequences_file, verbose=False)
     
+    # Prepare sequences for phylogenetic analysis
+    print("\n" + "=" * 80)
+    print("Preparing sequences for phylogenetic analysis")
+    print("=" * 80)
+    
+    phylogeny_results = phylogeny_utils.prepare_sequences_for_phylogeny(
+        input_fasta=unique_fasta,
+        output_dir=phylogeny_output_dir,
+        mafft_algorithm="linsi",  # High accuracy alignment for proteins
+        clipkit_mode="smart-gap",  # Dynamic gap threshold determination
+        verbose=True
+    )
+    
+    if not phylogeny_results["success"]:
+        print(f"Warning: Phylogenetic preparation failed: {phylogeny_results.get('error', 'Unknown error')}")
+        print("Continuing with remaining pipeline steps...")
+    else:
+        print("Trimmed alignment is ready for IQTREE3 tree inference.")
+    
     # Create TSV file
     tsv_file = os.path.join(output_dir, 'unique_capsid_sequences.tsv')
     metadata_utils.save_metadata_tsv(unique_sequences, tsv_file, verbose=True)
@@ -159,6 +185,11 @@ def main():
     print(f"  - Cluster TSV: {clustering_results['output_files']['cluster_tsv']}")
     print(f"  - Representative sequences: {clustering_results['output_files']['rep_seq']}")
     print(f"  - All sequences per cluster: {clustering_results['output_files']['all_seqs']}")
+    
+    if phylogeny_results.get("success"):
+        print(f"\nPhylogenetic preparation files (in '{phylogeny_output_dir}' directory):")
+        print(f"  - Aligned sequences: {phylogeny_results['aligned_file']}")
+        print(f"  - Trimmed alignment: {phylogeny_results['trimmed_file']} (ready for IQTREE3)")
 
 
 if __name__ == "__main__":

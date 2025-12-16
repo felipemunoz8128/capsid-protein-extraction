@@ -1,0 +1,50 @@
+================================================================================
+ClipKIT Trimming Log
+================================================================================
+Command: /Users/felipemunoz/miniconda3/envs/capsid-protein-extraction/bin/clipkit outputs/phylogeny/aligned_sequences.fasta -o outputs/phylogeny/aligned_sequences_trimmed.fasta -m smart-gap -g 0.9
+Mode: smart-gap
+Gaps threshold: 0.9
+Input: outputs/phylogeny/aligned_sequences.fasta
+Output: outputs/phylogeny/aligned_sequences_trimmed.fasta
+
+================================================================================
+STDOUT:
+================================================================================
+
+-------------
+| Arguments |
+-------------
+Input file: outputs/phylogeny/aligned_sequences.fasta (format: fasta)
+Output file: outputs/phylogeny/aligned_sequences_trimmed.fasta (format: fasta)
+Sequence type: Protein
+Gaps threshold: 0.9915
+Gap characters: ['-', '?', '*', 'X', 'x']
+Trimming mode: smart-gap
+Create complementary output: False
+Process as codons: False
+Trim ends only: False
+Create log file: False
+
+
+------------------------
+| Writing output files |
+------------------------
+Trimmed alignment: outputs/phylogeny/aligned_sequences_trimmed.fasta
+Complement file: False
+Log file: False
+
+
+---------------------
+| Output Statistics |
+---------------------
+Original length: 401
+Number of sites kept: 324
+Number of sites trimmed: 77
+Percentage of alignment trimmed: 19.202%
+
+Execution time: 0.009s
+
+
+================================================================================
+STDERR:
+================================================================================

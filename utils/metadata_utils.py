@@ -52,6 +52,9 @@ def aggregate_metadata_by_sequence(hits):
         - "primaryAccession": string or list of strings (if multiple accessions)
         - "secondaryAccessions": list of unique secondary accessions
         - "uniProtkbId": string or list of strings (if multiple IDs)
+        - "label": organism label extracted from uniProtkbId (e.g., "FIVWO" from "GAG_FIVWO").
+                   If duplicate labels exist, format is "label_primaryAccession" to ensure uniqueness.
+                   Falls back to primaryAccession if label cannot be extracted.
         - "organism": dict with aggregated organism information
         - "organismHosts": list of unique host dictionaries
         - "description": string or list of strings (if multiple descriptions)
@@ -163,6 +166,45 @@ def aggregate_metadata_by_sequence(hits):
     
     # Return only the entries we kept
     unique_sequences = [entry for entry, _ in accession_to_entry.values()]
+    
+    # Add label field to each entry and handle duplicates
+    # First, extract base labels and count duplicates
+    from utils.fasta_utils import _extract_label_from_uniprotkb_id
+    label_counts = {}
+    for entry in unique_sequences:
+        uniProtkb_id = entry.get("uniProtkbId", "")
+        base_label = _extract_label_from_uniprotkb_id(uniProtkb_id)
+        if base_label:
+            label_counts[base_label] = label_counts.get(base_label, 0) + 1
+    
+    # Add label field, appending primaryAccession for duplicates
+    for entry in unique_sequences:
+        uniProtkb_id = entry.get("uniProtkbId", "")
+        base_label = _extract_label_from_uniprotkb_id(uniProtkb_id)
+        
+        if base_label:
+            # If label is a duplicate, append primaryAccession to make it unique
+            if label_counts.get(base_label, 0) > 1:
+                acc = entry.get("primaryAccession", "")
+                if isinstance(acc, list):
+                    acc_str = str(acc[0]) if acc else ""
+                else:
+                    acc_str = str(acc) if acc else ""
+                if acc_str:
+                    entry["label"] = f"{base_label}_{acc_str}"
+                else:
+                    # Fallback: use base label even if no accession (shouldn't happen)
+                    entry["label"] = base_label
+            else:
+                # Unique label, use as-is
+                entry["label"] = base_label
+        else:
+            # No label extracted, use primaryAccession as fallback
+            acc = entry.get("primaryAccession", "")
+            if isinstance(acc, list):
+                entry["label"] = ','.join(str(a) for a in acc if a) if acc else ""
+            else:
+                entry["label"] = str(acc) if acc else ""
     
     return unique_sequences
 
@@ -324,9 +366,12 @@ def save_metadata_tsv(metadata_list, output_file, verbose=True):
         for entry in metadata_list:
             row = []
             
-            # Extract organism labels from uniProtkbId(s)
-            uniProtkb_id = entry.get('uniProtkbId', '')
-            label = extract_organism_labels(uniProtkb_id)
+            # Use label field from entry (already unique, handles duplicates)
+            # Fallback to extracting from uniProtkbId if label field not present
+            label = entry.get('label', '')
+            if not label:
+                uniProtkb_id = entry.get('uniProtkbId', '')
+                label = extract_organism_labels(uniProtkb_id)
             row.append(label)
             
             # Primary accession
