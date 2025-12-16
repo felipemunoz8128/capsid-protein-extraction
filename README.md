@@ -77,7 +77,7 @@ All output files are saved in the `outputs/` directory:
 ## Project Structure
 
 ```
-.
+capsid-protein-extraction/
 ├── extract_capsid_proteins.py  # Main workflow script
 ├── utils/                      # Utility modules
 │   ├── __init__.py
@@ -85,6 +85,13 @@ All output files are saved in the `outputs/` directory:
 │   ├── metadata_utils.py      # Metadata aggregation and processing
 │   ├── mmseqs2_utils.py      # MMseqs2 clustering operations
 │   └── uniprot_utils.py       # UniProt API interactions
+├── outputs/                    # Output files (example results included)
+│   ├── all_capsid_hits.json
+│   ├── unique_capsid_sequences.json
+│   ├── unique_capsid_sequences.tsv
+│   ├── unique_capsid_sequences.fasta
+│   ├── mmseqs2_outputs/       # MMseqs2 clustering results
+│   └── orthoretrovirinae_gag_swissprot/  # Downloaded UniProt entries
 ├── requirements.txt           # Python dependencies
 └── README.md                  # This file
 ```
