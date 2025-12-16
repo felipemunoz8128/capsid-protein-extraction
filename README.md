@@ -32,8 +32,8 @@ This project extracts capsid protein features from Orthoretrovirinae Gag protein
 
 1. Clone this repository:
 ```bash
-git clone <your-repo-url>
-cd 121225
+git clone https://github.com/felipemunoz8128/capsid-protein-extraction.git
+cd capsid-protein-extraction
 ```
 
 2. Install Python dependencies:
@@ -108,11 +108,4 @@ clustering_results = mmseqs2_utils.run_mmseqs_clustering(
 )
 ```
 
-## License
-
-[Add your license here]
-
-## Citation
-
-If you use this code in your research, please cite appropriately.
 
